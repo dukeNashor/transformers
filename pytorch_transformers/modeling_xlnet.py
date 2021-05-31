@@ -333,24 +333,40 @@ class XLNetConfig(PretrainedConfig):
         return self.n_layer
 
 
-try:
-    from apex.normalization.fused_layer_norm import FusedLayerNorm as XLNetLayerNorm
-except ImportError:
-    logger.info("Better speed can be achieved with apex installed from https://www.github.com/nvidia/apex .")
-    class XLNetLayerNorm(nn.Module):
-        def __init__(self, d_model, eps=1e-12):
-            """Construct a layernorm module in the TF style (epsilon inside the square root).
-            """
-            super(XLNetLayerNorm, self).__init__()
-            self.weight = nn.Parameter(torch.ones(d_model))
-            self.bias = nn.Parameter(torch.zeros(d_model))
-            self.variance_epsilon = eps
+#try:
+#    from apex.normalization.fused_layer_norm import FusedLayerNorm as XLNetLayerNorm
+#except ImportError:
+#    logger.info("Better speed can be achieved with apex installed from https://www.github.com/nvidia/apex .")
+#    class XLNetLayerNorm(nn.Module):
+#        def __init__(self, d_model, eps=1e-12):
+#            """Construct a layernorm module in the TF style (epsilon inside the square root).
+#            """
+#            super(XLNetLayerNorm, self).__init__()
+#            self.weight = nn.Parameter(torch.ones(d_model))
+#            self.bias = nn.Parameter(torch.zeros(d_model))
+#            self.variance_epsilon = eps
 
-        def forward(self, x):
-            u = x.mean(-1, keepdim=True)
-            s = (x - u).pow(2).mean(-1, keepdim=True)
-            x = (x - u) / torch.sqrt(s + self.variance_epsilon)
-            return self.weight * x + self.bias
+#        def forward(self, x):
+#            u = x.mean(-1, keepdim=True)
+#            s = (x - u).pow(2).mean(-1, keepdim=True)
+#            x = (x - u) / torch.sqrt(s + self.variance_epsilon)
+#            return self.weight * x + self.bias
+
+
+class XLNetLayerNorm(nn.Module):
+    def __init__(self, d_model, eps=1e-12):
+        """Construct a layernorm module in the TF style (epsilon inside the square root).
+        """
+        super(XLNetLayerNorm, self).__init__()
+        self.weight = nn.Parameter(torch.ones(d_model))
+        self.bias = nn.Parameter(torch.zeros(d_model))
+        self.variance_epsilon = eps
+
+    def forward(self, x):
+        u = x.mean(-1, keepdim=True)
+        s = (x - u).pow(2).mean(-1, keepdim=True)
+        x = (x - u) / torch.sqrt(s + self.variance_epsilon)
+        return self.weight * x + self.bias
 
 class XLNetRelativeAttention(nn.Module):
     def __init__(self, config):
